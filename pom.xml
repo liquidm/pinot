@@ -676,11 +676,6 @@
           </exclusion>
         </exclusions>
       </dependency>
-      <!--<dependency>
-        <groupId>com.sun.jersey</groupId>
-        <artifactId>jersey-core</artifactId>
-        <version>1.19.2</version>
-      </dependency>-->
       <dependency>
         <groupId>org.javassist</groupId>
         <artifactId>javassist</artifactId>
@@ -992,7 +987,7 @@
           <artifactId>maven-enforcer-plugin</artifactId>
           <executions>
             <execution>
-              <id>enforce</id>
+              <id>enforce-dependency-convergence</id>
               <goals>
                 <goal>enforce</goal>
               </goals>
