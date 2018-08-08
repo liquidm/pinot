@@ -25,6 +25,7 @@ import com.linkedin.pinot.common.utils.time.TimeUtils;
 import com.linkedin.pinot.controller.ControllerConf;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
 import com.linkedin.pinot.controller.helix.core.PinotHelixSegmentOnlineOfflineStateModelGenerator;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -89,15 +90,23 @@ public class RealtimeSegmentRelocator {
    * https://github.com/linkedin/pinot/issues/2609
    */
   public void runRelocation() {
-    if (!_pinotHelixResourceManager.isLeader()) {
+    /*if (!_pinotHelixResourceManager.isLeader()) {
       LOGGER.info("Skipping realtime segment relocation, not leader!");
       return;
-    }
+    }*/
 
     LOGGER.info("Starting relocation of realtime segments");
     List<String> allRealtimeTableNames = _pinotHelixResourceManager.getAllRealtimeTables();
 
     for (final String tableNameWithType : allRealtimeTableNames) {
+
+      MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+      int partitionNum = partitionFunction.getPartition(tableNameWithType);
+      if (!_pinotHelixResourceManager.isPartitionLeader(partitionNum)) {
+        LOGGER.info("Skipping realtime segment relocation, not leader!");
+        return;
+      }
+
       try {
         LOGGER.info("Starting relocation of segments for table: {}", tableNameWithType);
 

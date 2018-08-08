@@ -26,6 +26,7 @@ import com.linkedin.pinot.common.utils.SegmentName;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
 import com.linkedin.pinot.controller.helix.core.retention.strategy.RetentionStrategy;
 import com.linkedin.pinot.controller.helix.core.retention.strategy.TimeRetentionStrategy;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -73,23 +74,28 @@ public class RetentionManager {
   public void execute() {
     LOGGER.info("Start managing retention for all tables");
     try {
-      if (_pinotHelixResourceManager.isLeader()) {
-        long startTime = System.currentTimeMillis();
+      /*if (_pinotHelixResourceManager.isLeader()) {*/
+      long startTime = System.currentTimeMillis();
 
-        for (String tableNameWithType : _pinotHelixResourceManager.getAllTables()) {
+      for (String tableNameWithType : _pinotHelixResourceManager.getAllTables()) {
+
+        MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+        int partitionNum = partitionFunction.getPartition(tableNameWithType);
+        if (_pinotHelixResourceManager.isPartitionLeader(partitionNum)) {
           LOGGER.info("Start managing retention for table: {}", tableNameWithType);
           manageRetentionForTable(tableNameWithType);
         }
-
-        LOGGER.info("Removing aged (more than {} days) deleted segments for all tables",
-            _deletedSegmentsRetentionInDays);
-        _pinotHelixResourceManager.getSegmentDeletionManager()
-            .removeAgedDeletedSegments(_deletedSegmentsRetentionInDays);
-
-        LOGGER.info("Finished managing retention for all tables in {}ms", System.currentTimeMillis() - startTime);
-      } else {
-        LOGGER.info("Controller is not leader, skip");
       }
+
+      LOGGER.info("Removing aged (more than {} days) deleted segments for all tables",
+          _deletedSegmentsRetentionInDays);
+      _pinotHelixResourceManager.getSegmentDeletionManager()
+          .removeAgedDeletedSegments(_deletedSegmentsRetentionInDays);
+
+      LOGGER.info("Finished managing retention for all tables in {}ms", System.currentTimeMillis() - startTime);
+      /*} else {
+        LOGGER.info("Controller is not leader, skip");
+      }*/
     } catch (Exception e) {
       LOGGER.error("Caught exception while managing retention for all tables", e);
     }

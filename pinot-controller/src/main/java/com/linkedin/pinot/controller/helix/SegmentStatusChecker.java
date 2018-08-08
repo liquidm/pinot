@@ -24,6 +24,7 @@ import com.linkedin.pinot.common.utils.CommonConstants.Helix.TableType;
 import com.linkedin.pinot.controller.ControllerConf;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
 import com.linkedin.pinot.controller.util.TableSizeReader;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executors;
@@ -140,11 +141,11 @@ public class SegmentStatusChecker {
    * Runs a segment status pass over the currently loaded tables.
    */
   void updateSegmentMetrics() {
-    if (!_pinotHelixResourceManager.isLeader()) {
+    /*if (!_pinotHelixResourceManager.isLeader()) {
       LOGGER.info("Skipping Segment Status check, not leader!");
       setStatusToDefault();
       return;
-    }
+    }*/
 
     long startTime = System.nanoTime();
 
@@ -170,6 +171,15 @@ public class SegmentStatusChecker {
     }
 
     for (String tableName : allTableNames) {
+
+      MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+      int partitionNum = partitionFunction.getPartition(tableName);
+      if (!_pinotHelixResourceManager.isPartitionLeader(partitionNum)) {
+        LOGGER.info("Skipping Segment Status check, not leader!");
+        setStatusToDefault();
+        return;
+      }
+
       try {
         if (TableNameBuilder.getTableTypeFromTableName(tableName) == TableType.OFFLINE) {
           offlineTableCount++;

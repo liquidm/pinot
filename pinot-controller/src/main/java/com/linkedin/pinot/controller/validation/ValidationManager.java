@@ -29,6 +29,7 @@ import com.linkedin.pinot.common.utils.time.TimeUtils;
 import com.linkedin.pinot.controller.ControllerConf;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
 import com.linkedin.pinot.controller.helix.core.realtime.PinotLLCRealtimeSegmentManager;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import com.linkedin.pinot.core.realtime.stream.StreamMetadata;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -116,11 +117,11 @@ public class ValidationManager {
    * Runs a validation pass over the currently loaded tables.
    */
   public void runValidation() {
-    if (!_pinotHelixResourceManager.isLeader()) {
+    /*if (!_pinotHelixResourceManager.isLeader()) {
       _validationMetrics.unregisterAllMetrics();
       LOGGER.info("Skipping validation, not leader!");
       return;
-    }
+    }*/
 
     LOGGER.info("Starting validation");
     // Fetch the list of tables
@@ -128,6 +129,15 @@ public class ValidationManager {
     ZkHelixPropertyStore<ZNRecord> propertyStore = _pinotHelixResourceManager.getPropertyStore();
 
     for (String tableNameWithType : allTableNames) {
+
+      MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+      int partitionNum = partitionFunction.getPartition(tableNameWithType);
+      if (!_pinotHelixResourceManager.isPartitionLeader(partitionNum)) {
+        _validationMetrics.unregisterAllMetrics();
+        LOGGER.info("Skipping validation, not leader!");
+        return;
+      }
+
       try {
         _pinotHelixResourceManager.rebuildBrokerResourceFromHelixTags(tableNameWithType);
         LOGGER.info("Starting to validate table: {}", tableNameWithType);
