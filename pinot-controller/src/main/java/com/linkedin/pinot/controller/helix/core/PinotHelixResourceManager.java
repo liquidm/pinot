@@ -2165,7 +2165,31 @@ public class PinotHelixResourceManager {
   }
 
   public boolean isPartitionLeader(int partitionNum) {
-    return true;
+    ExternalView leadControllerResourceEV = _helixAdmin.getResourceExternalView(_helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE);
+
+    if (leadControllerResourceEV == null) {
+      LOGGER.error("Exception getting external view for lead controller resource!");
+      return false;
+    }
+
+    String partitionName = CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE + "_" + partitionNum;
+    Map<String, String> stateMap = leadControllerResourceEV.getStateMap(partitionName);
+    if (stateMap == null) {
+      LOGGER.error("External view for lead controller resource is empty!");
+      return false;
+    }
+
+    String masterInstanceId = "";
+    for (Map.Entry<String, String> entry : stateMap.entrySet()) {
+      String instanceId = entry.getKey();
+      String instanceState = entry.getValue();
+      if (CommonConstants.Helix.MASTER.equalsIgnoreCase(instanceState)) {
+        masterInstanceId = instanceId;
+        break;
+      }
+    }
+    LOGGER.info("masterInstanceId: " + masterInstanceId + "~~~~~~ currentInstanceId: " + _instanceId);
+    return _instanceId.equals(masterInstanceId);
   }
 
   /*

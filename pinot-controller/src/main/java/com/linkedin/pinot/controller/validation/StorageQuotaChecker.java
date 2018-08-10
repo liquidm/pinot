@@ -25,6 +25,7 @@ import com.linkedin.pinot.common.metrics.ControllerMetrics;
 import com.linkedin.pinot.common.utils.DataSize;
 import com.linkedin.pinot.controller.helix.core.PinotHelixResourceManager;
 import com.linkedin.pinot.controller.util.TableSizeReader;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import java.io.File;
 import javax.annotation.Nonnegative;
 import javax.annotation.Nonnull;
@@ -134,7 +135,9 @@ public class StorageQuotaChecker {
         tableSubtypeSize.reportedSizeInBytes);
 
     // Only emit the real percentage of storage quota usage by lead controller, otherwise emit 0L.
-    if (_pinotHelixResourceManager.isLeader() && allowedStorageBytes != 0L) {
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    int partitionNum = partitionFunction.getPartition(tableNameWithType);
+    if (_pinotHelixResourceManager.isPartitionLeader(partitionNum) && allowedStorageBytes != 0L) {
       long existingStorageQuotaUtilization = tableSubtypeSize.estimatedSizeInBytes  * 100 / allowedStorageBytes;
       _controllerMetrics.setValueOfTableGauge(tableName, ControllerGauge.TABLE_STORAGE_QUOTA_UTILIZATION,
           existingStorageQuotaUtilization);

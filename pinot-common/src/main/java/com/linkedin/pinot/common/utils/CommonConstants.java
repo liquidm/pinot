@@ -38,6 +38,11 @@ public class CommonConstants {
     public static final String UNTAGGED_SERVER_INSTANCE = "server_untagged";
     public static final String UNTAGGED_BROKER_INSTANCE = "broker_untagged";
 
+    public static final String LEAD_CONTROLLER_RESOURCE_INSTANCE = "leadControllerResource";
+
+    public static final String MASTER = "MASTER";
+    public static final String SLAVE = "SLAVE";
+
     public static class StateModel {
       public static class SegmentOnlineOfflineStateModel {
         public static final String ONLINE = "ONLINE";

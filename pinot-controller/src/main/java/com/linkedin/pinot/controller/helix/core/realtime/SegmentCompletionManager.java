@@ -24,6 +24,7 @@ import com.linkedin.pinot.common.utils.CommonConstants;
 import com.linkedin.pinot.common.utils.LLCSegmentName;
 import com.linkedin.pinot.controller.ControllerConf;
 import com.linkedin.pinot.controller.helix.core.realtime.segment.CommittingSegmentDescriptor;
+import com.linkedin.pinot.core.data.partition.MurmurPartitionFunction;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -148,21 +149,34 @@ public class SegmentCompletionManager {
     return fsm;
   }
 
+  public boolean isPartitionLeader(int partitionNum) {
+    return true;
+  }
+
   /**
    * This method is to be called when a server calls in with the segmentConsumed() API, reporting an offset in kafka
    * that it currently has (i.e. next offset that it will consume, if it continues to consume).
    */
   public SegmentCompletionProtocol.Response segmentConsumed(SegmentCompletionProtocol.Request.Params reqParams) {
-    if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+    /*if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
       _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
       return SegmentCompletionProtocol.RESP_NOT_LEADER;
-    }
+    }*/
     final String segmentNameStr = reqParams.getSegmentName();
     final String instanceId = reqParams.getInstanceId();
     final String stopReason = reqParams.getReason();
     final long offset = reqParams.getOffset();
 
     LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    String realtimeTableName = TableNameBuilder.REALTIME.tableNameWithType(segmentName.getTableName());
+    int partitionNum = partitionFunction.getPartition(realtimeTableName);
+    if (!isPartitionLeader(partitionNum) || !_helixManager.isConnected()) {
+      _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
+      return SegmentCompletionProtocol.RESP_NOT_LEADER;
+    }
+
     SegmentCompletionProtocol.Response response = SegmentCompletionProtocol.RESP_FAILED;
     SegmentCompletionFSM fsm = null;
     try {
@@ -190,14 +204,23 @@ public class SegmentCompletionManager {
    * incoming segment).
    */
   public SegmentCompletionProtocol.Response segmentCommitStart(final SegmentCompletionProtocol.Request.Params reqParams) {
-    if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+    /*if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
       _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
       return SegmentCompletionProtocol.RESP_NOT_LEADER;
-    }
+    }*/
     final String segmentNameStr = reqParams.getSegmentName();
     final String instanceId = reqParams.getInstanceId();
     final long offset = reqParams.getOffset();
     LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    String realtimeTableName = TableNameBuilder.REALTIME.tableNameWithType(segmentName.getTableName());
+    int partitionNum = partitionFunction.getPartition(realtimeTableName);
+    if (!isPartitionLeader(partitionNum) || !_helixManager.isConnected()) {
+      _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
+      return SegmentCompletionProtocol.RESP_NOT_LEADER;
+    }
+
     SegmentCompletionFSM fsm = null;
     SegmentCompletionProtocol.Response response = SegmentCompletionProtocol.RESP_FAILED;
     try {
@@ -214,15 +237,24 @@ public class SegmentCompletionManager {
   }
 
   public SegmentCompletionProtocol.Response extendBuildTime(final SegmentCompletionProtocol.Request.Params reqParams) {
-    if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+    /*if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
       _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
       return SegmentCompletionProtocol.RESP_NOT_LEADER;
-    }
+    }*/
     final String segmentNameStr = reqParams.getSegmentName();
     final String instanceId = reqParams.getInstanceId();
     final long offset = reqParams.getOffset();
     final int extTimeSec = reqParams.getExtraTimeSec();
     LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    String realtimeTableName = TableNameBuilder.REALTIME.tableNameWithType(segmentName.getTableName());
+    int partitionNum = partitionFunction.getPartition(realtimeTableName);
+    if (!isPartitionLeader(partitionNum) || !_helixManager.isConnected()) {
+      _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
+      return SegmentCompletionProtocol.RESP_NOT_LEADER;
+    }
+
     SegmentCompletionFSM fsm = null;
     SegmentCompletionProtocol.Response response = SegmentCompletionProtocol.RESP_FAILED;
     try {
@@ -245,15 +277,24 @@ public class SegmentCompletionManager {
    * @return
    */
   public SegmentCompletionProtocol.Response segmentStoppedConsuming(SegmentCompletionProtocol.Request.Params reqParams) {
-    if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+    /*if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
       _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
       return SegmentCompletionProtocol.RESP_NOT_LEADER;
-    }
+    }*/
     final String segmentNameStr = reqParams.getSegmentName();
     final String instanceId = reqParams.getInstanceId();
     final long offset = reqParams.getOffset();
     final String reason = reqParams.getReason();
     LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    String realtimeTableName = TableNameBuilder.REALTIME.tableNameWithType(segmentName.getTableName());
+    int partitionNum = partitionFunction.getPartition(realtimeTableName);
+    if (!isPartitionLeader(partitionNum) || !_helixManager.isConnected()) {
+      _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
+      return SegmentCompletionProtocol.RESP_NOT_LEADER;
+    }
+
     SegmentCompletionFSM fsm = null;
     SegmentCompletionProtocol.Response response = SegmentCompletionProtocol.RESP_FAILED;
     try {
@@ -280,12 +321,21 @@ public class SegmentCompletionManager {
    * @return
    */
   public SegmentCompletionProtocol.Response segmentCommitEnd(SegmentCompletionProtocol.Request.Params reqParams, boolean success, boolean isSplitCommit) {
-    if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+    /*if (!_helixManager.isLeader() || !_helixManager.isConnected()) {
+      _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
+      return SegmentCompletionProtocol.RESP_NOT_LEADER;
+    }*/
+    final String segmentNameStr = reqParams.getSegmentName();
+    LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
+    MurmurPartitionFunction partitionFunction = new MurmurPartitionFunction(20);
+    String realtimeTableName = TableNameBuilder.REALTIME.tableNameWithType(segmentName.getTableName());
+    int partitionNum = partitionFunction.getPartition(realtimeTableName);
+    if (!isPartitionLeader(partitionNum) || !_helixManager.isConnected()) {
       _controllerMetrics.addMeteredGlobalValue(ControllerMeter.CONTROLLER_NOT_LEADER, 1L);
       return SegmentCompletionProtocol.RESP_NOT_LEADER;
     }
-    final String segmentNameStr = reqParams.getSegmentName();
-    LLCSegmentName segmentName = new LLCSegmentName(segmentNameStr);
+
     SegmentCompletionFSM fsm = null;
     SegmentCompletionProtocol.Response response = SegmentCompletionProtocol.RESP_FAILED;
     try {

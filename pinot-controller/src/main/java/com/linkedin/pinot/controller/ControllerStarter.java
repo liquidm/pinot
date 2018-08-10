@@ -48,6 +48,10 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.commons.io.FileUtils;
 import org.apache.helix.HelixManager;
+import org.apache.helix.HelixManagerFactory;
+import org.apache.helix.InstanceType;
+import org.apache.helix.examples.MasterSlaveStateModelFactory;
+import org.apache.helix.participant.StateMachineEngine;
 import org.apache.helix.task.TaskDriver;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
 import org.slf4j.Logger;
@@ -71,6 +75,8 @@ public class ControllerStarter {
   private final PinotRealtimeSegmentManager _realtimeSegmentsManager;
   private final SegmentStatusChecker _segmentStatusChecker;
   private final ExecutorService _executorService;
+  private final HelixManager _helixManager;
+  private final String _controllerInstanceId;
 
   // Can only be constructed after resource manager getting started
   private ValidationManager _validationManager;
@@ -91,6 +97,10 @@ public class ControllerStarter {
         Executors.newCachedThreadPool(new ThreadFactoryBuilder().setNameFormat("restapi-multiget-thread-%d").build());
     _segmentStatusChecker = new SegmentStatusChecker(_helixResourceManager, _config, _controllerMetrics);
     _realtimeSegmentRelocator = new RealtimeSegmentRelocator(_helixResourceManager, _config);
+
+    _controllerInstanceId = conf.getControllerHost() + "_" + conf.getControllerPort();
+    _helixManager = HelixManagerFactory.getZKHelixManager(conf.getHelixClusterName(), _controllerInstanceId,
+        InstanceType.PARTICIPANT, _config.getZkStr());
   }
 
   public PinotHelixResourceManager getHelixResourceManager() {
@@ -130,6 +140,18 @@ public class ControllerStarter {
     LOGGER.info("Starting Pinot Helix resource manager and connecting to Zookeeper");
     _helixResourceManager.start();
     final HelixManager helixManager = _helixResourceManager.getHelixZkManager();
+
+    try {
+      StateMachineEngine stateMach = _helixManager.getStateMachineEngine();
+      MasterSlaveStateModelFactory factory = new MasterSlaveStateModelFactory();
+      stateMach.registerStateModelFactory("MasterSlave", factory);
+      _helixManager.connect();
+      _helixManager.getClusterManagmentTool().enableInstance(_helixManager.getClusterName(), _helixManager.getInstanceName(), true);
+    } catch (Exception e) {
+      LOGGER.error("Fail to connect to Cluster as a participant!!!");
+      System.exit(-1);
+      return;
+    }
 
     LOGGER.info("Starting task resource manager");
     _helixTaskResourceManager = new PinotHelixTaskResourceManager(new TaskDriver(helixManager));

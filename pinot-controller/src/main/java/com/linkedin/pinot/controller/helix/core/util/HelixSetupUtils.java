@@ -22,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 import org.apache.helix.AccessOption;
 import org.apache.helix.HelixAdmin;
 import org.apache.helix.HelixDataAccessor;
+import org.apache.helix.HelixDefinedState;
 import org.apache.helix.HelixManager;
 import org.apache.helix.PropertyKey;
 import org.apache.helix.PropertyPathConfig;
@@ -42,6 +43,7 @@ import org.apache.helix.model.Message.MessageType;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.model.builder.HelixConfigScopeBuilder;
 import org.apache.helix.store.zk.ZkHelixPropertyStore;
+import org.apache.helix.tools.StateModelConfigGenerator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import com.linkedin.pinot.common.utils.CommonConstants;
@@ -143,12 +145,64 @@ public class HelixSetupUtils {
         PinotHelixBrokerResourceOnlineOfflineStateModelGenerator.PINOT_BROKER_RESOURCE_ONLINE_OFFLINE_STATE_MODEL,
         PinotHelixBrokerResourceOnlineOfflineStateModelGenerator.generatePinotStateModelDefinition());
 
+
+/*    StateModelDefinition stateModel = new StateModelDefinition.Builder("MasterSlave")
+        // OFFLINE is the state that the system starts in (initial state is REQUIRED)
+        .initialState("OFFLINE")
+
+        // Lowest number here indicates highest priority, no value indicates lowest priority
+        .addState("MASTER", 1).addState("SLAVE", 2).addState("OFFLINE")
+
+        // Note the special inclusion of the DROPPED state (REQUIRED)
+        .addState(HelixDefinedState.DROPPED.toString())
+
+        // No more than one master allowed
+        .upperBound("MASTER", 1)
+
+        // R indicates an upper bound of number of replicas for each partition
+        .dynamicUpperBound("SLAVE", "R")
+
+        // Add some high-priority transitions
+        .addTransition("SLAVE", "MASTER", 1).addTransition("OFFLINE", "SLAVE", 2)
+
+        // Using the same priority value indicates that these transitions can fire in any order
+        .addTransition("MASTER", "SLAVE", 3).addTransition("SLAVE", "OFFLINE", 3)
+
+        // Not specifying a value defaults to lowest priority
+        // Notice the inclusion of the OFFLINE to DROPPED transition
+        // Since every state has a path to OFFLINE, they each now have a path to DROPPED (REQUIRED)
+        .addTransition("OFFLINE", HelixDefinedState.DROPPED.toString())
+
+        // Create the StateModelDefinition instance
+        .build();
+
+    admin.addStateModelDef(helixClusterName, "MasterSlave", stateModel);*/
+
+
     LOGGER.info("Adding empty ideal state for Broker!");
     HelixHelper.updateResourceConfigsFor(new HashMap<String, String>(), CommonConstants.Helix.BROKER_RESOURCE_INSTANCE,
         helixClusterName, admin);
     IdealState idealState =
         PinotTableIdealStateBuilder.buildEmptyIdealStateForBrokerResource(admin, helixClusterName);
     admin.setResourceIdealState(helixClusterName, CommonConstants.Helix.BROKER_RESOURCE_INSTANCE, idealState);
+
+    LOGGER.info("Adding empty ideal state for lead controller!");
+//    IdealState leadControllerIdealState = PinotTableIdealStateBuilder.buildEmptyIdealStateForLeadControllerResource(admin, helixClusterName);
+//    admin.setResourceIdealState(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, leadControllerIdealState);
+
+
+
+
+    StateModelConfigGenerator generator = new StateModelConfigGenerator();
+    admin.addStateModelDef(helixClusterName, "MasterSlave",
+        new StateModelDefinition(generator.generateConfigForMasterSlave()));
+
+    HelixHelper.updateResourceConfigsFor(new HashMap<String, String>(), CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE,
+        helixClusterName, admin);
+    admin.addResource(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, 20, "MasterSlave",
+        IdealState.RebalanceMode.FULL_AUTO.name());
+    admin.rebalance(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, 2);
+
     initPropertyStorePath(helixClusterName, zkPath);
     LOGGER.info("New Cluster setup completed... ********************************************** ");
   }

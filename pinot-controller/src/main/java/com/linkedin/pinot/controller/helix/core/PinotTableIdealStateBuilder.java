@@ -37,6 +37,7 @@ import org.apache.helix.HelixAdmin;
 import org.apache.helix.ZNRecord;
 import org.apache.helix.model.IdealState;
 import org.apache.helix.model.builder.CustomModeISBuilder;
+import org.apache.helix.model.builder.FullAutoModeISBuilder;
 import org.apache.helix.store.zk.ZkHelixPropertyStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -255,5 +256,28 @@ public class PinotTableIdealStateBuilder {
         IOUtils.closeQuietly(consumerWrapper);
       }
     }
+  }
+
+  /**
+   *
+   * Building an empty idealState for a given table.
+   * Used when creating a new table.
+   *
+   * @param helixAdmin
+   * @param helixClusterName
+   * @return
+   */
+  public static IdealState buildEmptyIdealStateForLeadControllerResource(HelixAdmin helixAdmin, String helixClusterName) {
+    final FullAutoModeISBuilder fullAutoModeISBuilder =
+        new FullAutoModeISBuilder(Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE);
+    fullAutoModeISBuilder.setStateModel("MasterSlave")
+        .setMaxPartitionsPerNode(20)
+        .setNumReplica(Integer.MAX_VALUE)
+        .setNumPartitions(20);
+    for (int i = 0; i < 20; i++) {
+      fullAutoModeISBuilder.add("" + i);
+    }
+    final IdealState idealState = fullAutoModeISBuilder.build();
+    return idealState;
   }
 }

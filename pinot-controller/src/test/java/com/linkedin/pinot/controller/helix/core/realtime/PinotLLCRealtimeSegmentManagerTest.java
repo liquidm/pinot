@@ -1430,7 +1430,7 @@ public class PinotLLCRealtimeSegmentManagerTest {
     }
 
     @Override
-    protected boolean isLeader() {
+    protected boolean isLeader(String tableNameWithType) {
       return IS_LEADER;
     }
 

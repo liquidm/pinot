@@ -273,6 +273,32 @@ public class HelixHelper {
         DEFAULT_RETRY_POLICY);
   }
 
+
+  /**
+   * Remove a resource (controller) from the lead controller's ideal state.
+   *
+   * @param helixManager The HelixManager object for accessing helix cluster.
+   * @param resourceTag Name of the resource that needs to be removed from lead controller ideal state.
+   */
+  public static void removeResourceFromLeadControllerIdealState(HelixManager helixManager, final String resourceTag) {
+    Function<IdealState, IdealState> updater = new Function<IdealState, IdealState>() {
+      @Override
+      public IdealState apply(IdealState idealState) {
+        if (idealState.getPartitionSet().contains(resourceTag)) {
+          idealState.getPartitionSet().remove(resourceTag);
+          return idealState;
+        } else {
+          return null;
+        }
+      }
+    };
+
+    // Removing partitions from ideal state
+    LOGGER.info("Trying to remove resource {} from idealstate", resourceTag);
+    HelixHelper.updateIdealState(helixManager, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, updater,
+        DEFAULT_RETRY_POLICY);
+  }
+
   /**
    * Returns the set of online instances from external view.
    *
