@@ -47,10 +47,13 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import org.apache.commons.io.FileUtils;
+import org.apache.helix.ConfigAccessor;
+import org.apache.helix.HelixDataAccessor;
 import org.apache.helix.HelixManager;
 import org.apache.helix.HelixManagerFactory;
 import org.apache.helix.InstanceType;
 import org.apache.helix.examples.MasterSlaveStateModelFactory;
+import org.apache.helix.model.InstanceConfig;
 import org.apache.helix.participant.StateMachineEngine;
 import org.apache.helix.task.TaskDriver;
 import org.glassfish.hk2.utilities.binding.AbstractBinder;
@@ -101,6 +104,7 @@ public class ControllerStarter {
     _controllerInstanceId = conf.getControllerHost() + "_" + conf.getControllerPort();
     _helixManager = HelixManagerFactory.getZKHelixManager(conf.getHelixClusterName(), _controllerInstanceId,
         InstanceType.PARTICIPANT, _config.getZkStr());
+
   }
 
   public PinotHelixResourceManager getHelixResourceManager() {
@@ -143,10 +147,18 @@ public class ControllerStarter {
 
     try {
       StateMachineEngine stateMach = _helixManager.getStateMachineEngine();
+
       MasterSlaveStateModelFactory factory = new MasterSlaveStateModelFactory();
       stateMach.registerStateModelFactory("MasterSlave", factory);
       _helixManager.connect();
       _helixManager.getClusterManagmentTool().enableInstance(_helixManager.getClusterName(), _helixManager.getInstanceName(), true);
+
+      InstanceConfig instanceConfig = _helixResourceManager.getHelixInstanceConfig(_controllerInstanceId);
+      instanceConfig.addTag("controller");
+
+      HelixDataAccessor accessor = _helixManager.getHelixDataAccessor();
+      accessor.setProperty(accessor.keyBuilder().instanceConfig(_controllerInstanceId), instanceConfig);
+
     } catch (Exception e) {
       LOGGER.error("Fail to connect to Cluster as a participant!!!");
       System.exit(-1);

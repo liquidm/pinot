@@ -29,6 +29,7 @@ import org.apache.helix.PropertyPathConfig;
 import org.apache.helix.PropertyType;
 import org.apache.helix.ZNRecord;
 import org.apache.helix.controller.HelixControllerMain;
+import org.apache.helix.controller.rebalancer.strategy.CrushEdRebalanceStrategy;
 import org.apache.helix.manager.zk.ZKHelixAdmin;
 import org.apache.helix.manager.zk.ZKHelixDataAccessor;
 import org.apache.helix.manager.zk.ZKHelixManager;
@@ -39,6 +40,7 @@ import org.apache.helix.messaging.handling.HelixTaskExecutor;
 import org.apache.helix.model.HelixConfigScope;
 import org.apache.helix.model.HelixConfigScope.ConfigScopeProperty;
 import org.apache.helix.model.IdealState;
+import org.apache.helix.model.MasterSlaveSMD;
 import org.apache.helix.model.Message.MessageType;
 import org.apache.helix.model.StateModelDefinition;
 import org.apache.helix.model.builder.HelixConfigScopeBuilder;
@@ -190,17 +192,22 @@ public class HelixSetupUtils {
 //    IdealState leadControllerIdealState = PinotTableIdealStateBuilder.buildEmptyIdealStateForLeadControllerResource(admin, helixClusterName);
 //    admin.setResourceIdealState(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, leadControllerIdealState);
 
+//    StateModelDefinition stateModelDefinition = MasterSlaveSMD.build();
 
 
-
-    StateModelConfigGenerator generator = new StateModelConfigGenerator();
-    admin.addStateModelDef(helixClusterName, "MasterSlave",
-        new StateModelDefinition(generator.generateConfigForMasterSlave()));
+//    StateModelConfigGenerator generator = new StateModelConfigGenerator();
+    admin.addStateModelDef(helixClusterName, "MasterSlave", MasterSlaveSMD.build());
 
     HelixHelper.updateResourceConfigsFor(new HashMap<String, String>(), CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE,
         helixClusterName, admin);
     admin.addResource(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, 20, "MasterSlave",
-        IdealState.RebalanceMode.FULL_AUTO.name());
+        IdealState.RebalanceMode.FULL_AUTO.toString());
+
+
+
+    IdealState controllerIdealState = admin.getResourceIdealState(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE);
+    controllerIdealState.setInstanceGroupTag("controller");
+    admin.setResourceIdealState(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, controllerIdealState);
     admin.rebalance(helixClusterName, CommonConstants.Helix.LEAD_CONTROLLER_RESOURCE_INSTANCE, 2);
 
     initPropertyStorePath(helixClusterName, zkPath);
