@@ -6,7 +6,7 @@ stages:
 variables:
   VENDOR_PATH: "/go/src/github.com/influxdata"
   PROJECT_NAME: "telegraf"
-  TARGET_DIR: "pinot-distribution/target/pinot-*-pkg"
+  TARGET_DIR: "pinot-distribution/target"
   ARTIFACT_DIR: "artifact"
 
 build:
@@ -14,7 +14,7 @@ build:
   script:
   - mvn clean package -Dlicense.skip=true -DskipTests -Pbuild-shaded-jar
   - mkdir ${ARTIFACT_DIR}
-  - cp -r ${TARGET_DIR}/bin ${TARGET_DIR}/conf ${TARGET_DIR}/lib ${ARTIFACT_DIR}/
+  - cp ${TARGET_DIR}/pinot-*-pkg.zip
   
   artifacts:
     paths:
