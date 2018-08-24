@@ -11,7 +11,7 @@ variables:
 build:
   stage: build
   script:
-  - mvn install package -DskipTests -Pbuild-shaded-jar
+  - mvn install package -Dlicense.skip=true -DskipTests -Pbuild-shaded-jar
   - mkdir ${BIN_DIR}
   - cp pinot-distribution/target/pinot-*-pkg/* ${BIN_DIR}
   
