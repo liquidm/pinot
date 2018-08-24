@@ -1,0 +1,22 @@
+image: eu.gcr.io/ligatus-prod-public-registry/generic-build-agent:latest
+
+stages:
+  - build
+  
+variables:
+  VENDOR_PATH: "/go/src/github.com/influxdata"
+  PROJECT_NAME: "telegraf"
+  BIN_DIR: "bin"
+
+build:
+  stage: build
+  script:
+  - mvn install package -DskipTests -Pbuild-shaded-jar
+  - mkdir ${BIN_DIR}
+  - cp pinot-distribution/target/pinot-*-pkg/* ${BIN_DIR}
+  
+  artifacts:
+    paths:
+      - ${BIN_DIR}
+
+
