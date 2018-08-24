@@ -14,7 +14,7 @@ build:
   script:
   - mvn clean package -Dlicense.skip=true -DskipTests -Pbuild-shaded-jar
   - mkdir ${ARTIFACT_DIR}
-  - cp ${TARGET_DIR}/pinot-*-pkg.zip
+  - cp ${TARGET_DIR}/pinot-*-pkg.zip ${ARTIFACT_DIR}
   
   artifacts:
     paths:
