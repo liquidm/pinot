@@ -2,11 +2,6 @@ image: eu.gcr.io/ligatus-prod-public-registry/generic-build-agent:latest
 
 stages:
   - build
-  
-variables:
-  VENDOR_PATH: "/go/src/github.com/influxdata"
-  PROJECT_NAME: "telegraf"
-  TARGET_DIR: "pinot-distribution/target"
 
 build:
   stage: build
@@ -15,4 +10,4 @@ build:
   
   artifacts:
     paths:
-      - ${TARGET_DIR}/pinot-*-pkg.zip
+      - pinot-distribution/target/pinot-*-pkg.zip
