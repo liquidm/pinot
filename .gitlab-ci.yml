@@ -1,5 +1,8 @@
 image: eu.gcr.io/ligatus-prod-public-registry/generic-build-agent:latest
 
+variables:
+  ARTIFACT_DIR = 'artifact'
+
 stages:
   - build
 
@@ -8,6 +11,8 @@ build:
   script:
   - mvn clean package -Dlicense.skip=true -DskipTests -Pbuild-shaded-jar
   
+  - mv pinot-distribution/target/pinot-*-pkg.zip $ARTIFACT_DIR/pinot-pkg.zip
+  
   artifacts:
     paths:
-      - pinot-distribution/target/pinot-*-pkg.zip
+      - $ARTIFACT_DIR
