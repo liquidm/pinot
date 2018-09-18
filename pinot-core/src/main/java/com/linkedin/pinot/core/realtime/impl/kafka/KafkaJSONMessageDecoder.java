@@ -69,7 +69,7 @@ public class KafkaJSONMessageDecoder implements StreamMessageDecoder<byte[]> {
     if (message.has(columnName) && !message.isNull(columnName)) {
       Object entry;
       if (dimensionSpec.isSingleValueField()) {
-        entry = stringToDataType(dimensionSpec, message.getString(columnName));
+        entry = objectToDataType(dimensionSpec, message, columnName);
       } else {
         JSONArray jsonArray = message.getJSONArray(columnName);
         Object[] array = new Object[jsonArray.length()];
@@ -92,6 +92,29 @@ public class KafkaJSONMessageDecoder implements StreamMessageDecoder<byte[]> {
   @Override
   public GenericRow decode(byte[] payload, int offset, int length, GenericRow destination) {
     return decode(Arrays.copyOfRange(payload, offset, offset + length), destination);
+  }
+
+  private Object objectToDataType(FieldSpec spec, JSONObject message, String columnName) throws JSONException {
+    if (message.get(columnName) == null) {
+      return spec.getDefaultNullValue();
+    }
+
+    switch (spec.getDataType()) {
+      case INT:
+        return message.getInt(columnName);
+      case LONG:
+        return message.getLong(columnName);
+      case FLOAT:
+        return (float)message.getDouble(columnName);
+      case DOUBLE:
+        return message.getDouble(columnName);
+      case BOOLEAN:
+        return String.valueOf(message.getBoolean(columnName));
+      case STRING:
+        return message.getString(columnName);
+      default:
+        return null;
+    }
   }
 
   private Object stringToDataType(FieldSpec spec, String inString) {
@@ -118,7 +141,7 @@ public class KafkaJSONMessageDecoder implements StreamMessageDecoder<byte[]> {
     } catch (NumberFormatException e) {
       Object nullValue = spec.getDefaultNullValue();
       LOGGER.warn("Failed to parse {} as a value of type {} for column {}, defaulting to {}", inString,
-          spec.getDataType(), spec.getName(), nullValue, e);
+                  spec.getDataType(), spec.getName(), nullValue, e);
       return nullValue;
     }
   }
