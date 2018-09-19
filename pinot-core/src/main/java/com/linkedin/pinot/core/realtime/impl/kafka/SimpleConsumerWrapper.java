@@ -467,7 +467,6 @@ public class SimpleConsumerWrapper implements PinotKafkaConsumer {
   private RuntimeException exceptionForKafkaErrorCode(short kafkaErrorCode) {
     final Errors kafkaError = Errors.forCode(kafkaErrorCode);
     switch (kafkaError) {
-      case UNKNOWN:
       case OFFSET_OUT_OF_RANGE:
       case CORRUPT_MESSAGE:
       case MESSAGE_TOO_LARGE:
@@ -490,9 +489,6 @@ public class SimpleConsumerWrapper implements PinotKafkaConsumer {
       case REPLICA_NOT_AVAILABLE:
       case STALE_CONTROLLER_EPOCH:
       case NETWORK_EXCEPTION:
-      case GROUP_LOAD_IN_PROGRESS:
-      case GROUP_COORDINATOR_NOT_AVAILABLE:
-      case NOT_COORDINATOR_FOR_GROUP:
       case NOT_ENOUGH_REPLICAS:
       case NOT_ENOUGH_REPLICAS_AFTER_APPEND:
       case REBALANCE_IN_PROGRESS:
