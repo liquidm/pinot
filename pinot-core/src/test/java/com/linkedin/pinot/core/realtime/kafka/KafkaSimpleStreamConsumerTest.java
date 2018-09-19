@@ -173,18 +173,18 @@ public class KafkaSimpleStreamConsumerTest {
         for (int i = 0; i < topicMetadataArray.length; i++) {
           String topic = topics.get(i);
           if (!topic.equals(topicName)) {
-            topicMetadataArray[i] = new TopicMetadata(topic, null, Errors.UNKNOWN_TOPIC_OR_PARTITION.code());
+            topicMetadataArray[i] = new TopicMetadata(topic, null, Errors.UNKNOWN_TOPIC_OR_PARTITION);
           } else {
             PartitionMetadata[] partitionMetadataArray = new PartitionMetadata[partitionCount];
             for (int j = 0; j < partitionCount; j++) {
               java.util.List<BrokerEndPoint> emptyJavaList = Collections.emptyList();
               List<BrokerEndPoint> emptyScalaList = JavaConversions.asScalaBuffer(emptyJavaList).toList();
               partitionMetadataArray[j] = new PartitionMetadata(j, Some.apply(brokerArray[partitionLeaderIndices[j]]),
-                  emptyScalaList, emptyScalaList, Errors.NONE.code());
+                  emptyScalaList, emptyScalaList, Errors.NONE);
             }
 
             Seq<PartitionMetadata> partitionsMetadata = List.fromArray(partitionMetadataArray);
-            topicMetadataArray[i] = new TopicMetadata(topic, partitionsMetadata, Errors.NONE.code());
+            topicMetadataArray[i] = new TopicMetadata(topic, partitionsMetadata, Errors.NONE);
           }
         }
 

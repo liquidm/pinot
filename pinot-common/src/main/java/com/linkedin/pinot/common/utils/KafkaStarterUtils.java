@@ -21,7 +21,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 import org.I0Itec.zkclient.ZkClient;
-import org.apache.commons.io.FileUtils;
 import kafka.admin.TopicCommand;
 import kafka.server.KafkaConfig;
 import kafka.server.KafkaServerStartable;
@@ -127,7 +126,6 @@ public class KafkaStarterUtils {
 
   public static void stopServer(KafkaServerStartable serverStartable) {
     serverStartable.shutdown();
-    FileUtils.deleteQuietly(new File(serverStartable.serverConfig().logDirs().apply(0)));
   }
 
   public static void createTopic(String kafkaTopic, String zkStr, int partitionCount) {
